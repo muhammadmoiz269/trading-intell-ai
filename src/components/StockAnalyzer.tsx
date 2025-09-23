@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, BarChart3, Search, AlertTriangle, Settings } from "lucide-react";
+import { TrendingUp, TrendingDown, BarChart3, Search, AlertTriangle, Settings, Plus, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { 
   PolygonService, 
@@ -16,9 +16,12 @@ import {
 
 export default function StockAnalyzer() {
   const [ticker, setTicker] = useState("");
+  const [tickers, setTickers] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [stockData, setStockData] = useState<PolygonStockData | null>(null);
-  const [aiRecommendation, setAiRecommendation] = useState<OpenAIRecommendation | null>(null);
+  const [results, setResults] = useState<Array<{
+    stockData: PolygonStockData;
+    aiRecommendation: OpenAIRecommendation;
+  }>>([]);
   const [error, setError] = useState<string | null>(null);
 
   // For demo purposes, we'll use mock data
@@ -26,7 +29,7 @@ export default function StockAnalyzer() {
   const POLYGON_API_KEY = ""; // Add your Polygon API key here
   const OPENAI_API_KEY = ""; // Add your OpenAI API key here
 
-  const handleAnalyze = async () => {
+  const addTicker = () => {
     if (!ticker.trim()) {
       toast({
         title: "Error",
@@ -36,43 +39,82 @@ export default function StockAnalyzer() {
       return;
     }
 
+    const upperTicker = ticker.toUpperCase();
+    if (tickers.includes(upperTicker)) {
+      toast({
+        title: "Error",
+        description: "Ticker already added",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setTickers([...tickers, upperTicker]);
+    setTicker("");
+    toast({
+      title: "Ticker Added",
+      description: `${upperTicker} added to analysis list`,
+    });
+  };
+
+  const removeTicker = (tickerToRemove: string) => {
+    setTickers(tickers.filter(t => t !== tickerToRemove));
+  };
+
+  const handleAnalyze = async () => {
+    if (tickers.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please add at least one stock ticker",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     setError(null);
-    setStockData(null);
-    setAiRecommendation(null);
+    setResults([]);
 
     try {
-      let stockDataResult: PolygonStockData;
-      let aiRecommendationResult: OpenAIRecommendation;
+      const analysisResults = [];
 
-      if (POLYGON_API_KEY && OPENAI_API_KEY) {
-        // Use real APIs when keys are available
-        const polygonService = new PolygonService(POLYGON_API_KEY);
-        const openAIService = new OpenAIService(OPENAI_API_KEY);
+      for (const tickerSymbol of tickers) {
+        let stockDataResult: PolygonStockData;
+        let aiRecommendationResult: OpenAIRecommendation;
 
-        stockDataResult = await polygonService.getStockData(ticker);
-        aiRecommendationResult = await openAIService.getStockRecommendation(stockDataResult);
-      } else {
-        // Use mock data for demonstration
-        stockDataResult = createMockStockData(ticker);
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        aiRecommendationResult = createMockRecommendation(stockDataResult);
+        if (POLYGON_API_KEY && OPENAI_API_KEY) {
+          // Use real APIs when keys are available
+          const polygonService = new PolygonService(POLYGON_API_KEY);
+          const openAIService = new OpenAIService(OPENAI_API_KEY);
+
+          stockDataResult = await polygonService.getStockData(tickerSymbol);
+          aiRecommendationResult = await openAIService.getStockRecommendation(stockDataResult);
+        } else {
+          // Use mock data for demonstration
+          stockDataResult = createMockStockData(tickerSymbol);
+          // Simulate API delay
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          aiRecommendationResult = createMockRecommendation(stockDataResult);
+        }
+
+        analysisResults.push({
+          stockData: stockDataResult,
+          aiRecommendation: aiRecommendationResult
+        });
       }
 
-      setStockData(stockDataResult);
-      setAiRecommendation(aiRecommendationResult);
+      setResults(analysisResults);
 
       toast({
         title: "Analysis Complete",
-        description: `Generated recommendation for ${stockDataResult.ticker}`,
+        description: `Generated recommendations for ${tickers.length} stock${tickers.length > 1 ? 's' : ''}`,
       });
     } catch (error) {
       console.error("Analysis error:", error);
-      setError(error instanceof Error ? error.message : "Failed to analyze stock. Please try again.");
+      setError(error instanceof Error ? error.message : "Failed to analyze stocks. Please try again.");
       toast({
         title: "Analysis Failed",
-        description: "Unable to fetch stock data or generate recommendation",
+        description: "Unable to fetch stock data or generate recommendations",
         variant: "destructive",
       });
     } finally {
@@ -120,28 +162,60 @@ export default function StockAnalyzer() {
               Stock Analysis
             </CardTitle>
             <CardDescription>
-              Enter a stock ticker symbol (e.g., MSFT, TSLA, AAPL) to get started
+              Enter stock ticker symbols (e.g., MSFT, TSLA, AAPL) to add them to your analysis list
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="flex gap-4">
+          <CardContent className="space-y-4">
+            <div className="flex gap-2">
               <Input
                 placeholder="Enter stock ticker (e.g., MSFT, TSLA)"
                 value={ticker}
                 onChange={(e) => setTicker(e.target.value.toUpperCase())}
                 className="flex-1"
-                onKeyPress={(e) => e.key === "Enter" && handleAnalyze()}
+                onKeyPress={(e) => e.key === "Enter" && addTicker()}
               />
               <Button 
-                onClick={handleAnalyze} 
-                disabled={loading}
-                variant="default"
-                size="lg"
-                className="px-8"
+                onClick={addTicker} 
+                variant="outline"
+                size="default"
+                className="px-4"
               >
-                {loading ? "Analyzing..." : "Generate Report"}
+                <Plus className="h-4 w-4" />
+                Add
               </Button>
             </div>
+
+            {/* Display added tickers */}
+            {tickers.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Added tickers:</p>
+                <div className="flex flex-wrap gap-2">
+                  {tickers.map((tickerSymbol) => (
+                    <Badge key={tickerSymbol} variant="outline" className="flex items-center gap-1">
+                      {tickerSymbol}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                        onClick={() => removeTicker(tickerSymbol)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <Button 
+              onClick={handleAnalyze} 
+              disabled={loading || tickers.length === 0}
+              variant="default"
+              size="lg"
+              className="w-full"
+            >
+              {loading ? "Analyzing..." : `Generate Report${tickers.length > 1 ? 's' : ''} (${tickers.length})`}
+            </Button>
           </CardContent>
         </Card>
 
@@ -158,98 +232,103 @@ export default function StockAnalyzer() {
         )}
 
         {/* Results */}
-        {stockData && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Stock Data */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>{stockData.ticker}</span>
-                  <Badge variant={stockData.change >= 0 ? "default" : "destructive"}>
-                    {stockData.change >= 0 ? "+" : ""}{stockData.changePercent.toFixed(2)}%
-                  </Badge>
-                </CardTitle>
-                <CardDescription>Current Market Data</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Current Price</p>
-                    <p className="text-2xl font-bold">${stockData.price.toFixed(2)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Change</p>
-                    <p className={`text-2xl font-bold flex items-center gap-1 ${
-                      stockData.change >= 0 ? "text-success" : "text-danger"
-                    }`}>
-                      {stockData.change >= 0 ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
-                      {stockData.change >= 0 ? "+" : ""}{stockData.change}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Volume</p>
-                    <p className="text-lg font-semibold">{stockData.volume.toLocaleString()}</p>
-                  </div>
-                  {stockData.marketCap && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Market Cap</p>
-                      <p className="text-lg font-semibold">
-                        ${(stockData.marketCap / 1000000000).toFixed(1)}B
-                      </p>
-                    </div>
-                  )}
-                  {stockData.open && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Open</p>
-                      <p className="text-lg font-semibold">${stockData.open.toFixed(2)}</p>
-                    </div>
-                  )}
-                  {stockData.high && stockData.low && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Day Range</p>
-                      <p className="text-lg font-semibold">${stockData.low.toFixed(2)} - ${stockData.high.toFixed(2)}</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+        {results.length > 0 && (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-center">Analysis Results</h2>
+            <div className="grid grid-cols-1 gap-8">
+              {results.map(({ stockData, aiRecommendation }, index) => (
+                <div key={stockData.ticker} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Stock Data */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <span>{stockData.ticker}</span>
+                        <Badge variant={stockData.change >= 0 ? "default" : "destructive"}>
+                          {stockData.change >= 0 ? "+" : ""}{stockData.changePercent.toFixed(2)}%
+                        </Badge>
+                      </CardTitle>
+                      <CardDescription>Current Market Data</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Current Price</p>
+                          <p className="text-2xl font-bold">${stockData.price.toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Change</p>
+                          <p className={`text-2xl font-bold flex items-center gap-1 ${
+                            stockData.change >= 0 ? "text-success" : "text-danger"
+                          }`}>
+                            {stockData.change >= 0 ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
+                            {stockData.change >= 0 ? "+" : ""}{stockData.change}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Volume</p>
+                          <p className="text-lg font-semibold">{stockData.volume.toLocaleString()}</p>
+                        </div>
+                        {stockData.marketCap && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Market Cap</p>
+                            <p className="text-lg font-semibold">
+                              ${(stockData.marketCap / 1000000000).toFixed(1)}B
+                            </p>
+                          </div>
+                        )}
+                        {stockData.open && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Open</p>
+                            <p className="text-lg font-semibold">${stockData.open.toFixed(2)}</p>
+                          </div>
+                        )}
+                        {stockData.high && stockData.low && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Day Range</p>
+                            <p className="text-lg font-semibold">${stockData.low.toFixed(2)} - ${stockData.high.toFixed(2)}</p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
 
-            {/* AI Recommendation */}
-            {aiRecommendation && (
-              <Card className={`border-${getRecommendationColor(aiRecommendation.recommendation)} glow-${getRecommendationColor(aiRecommendation.recommendation)}`}>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>AI Recommendation</span>
-                    <Badge variant={getRecommendationColor(aiRecommendation.recommendation) as any}>
-                      {aiRecommendation.recommendation}
-                    </Badge>
-                  </CardTitle>
-                  <CardDescription>
-                    Confidence: {aiRecommendation.confidence}% | Risk: {aiRecommendation.riskLevel}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-2">Analysis</p>
-                    <p className="text-sm leading-relaxed">{aiRecommendation.reasoning}</p>
-                  </div>
-                  {aiRecommendation.priceTarget && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Price Target</p>
-                      <p className="text-xl font-bold">${aiRecommendation.priceTarget.toFixed(2)}</p>
-                    </div>
-                  )}
-                  <div className="flex gap-2">
-                    <Badge variant={getRiskColor(aiRecommendation.riskLevel) as any}>
-                      {aiRecommendation.riskLevel} Risk
-                    </Badge>
-                    <Badge variant="outline">
-                      {aiRecommendation.confidence}% Confidence
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                  {/* AI Recommendation */}
+                  <Card className={`border-${getRecommendationColor(aiRecommendation.recommendation)} glow-${getRecommendationColor(aiRecommendation.recommendation)}`}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <span>AI Recommendation</span>
+                        <Badge variant={getRecommendationColor(aiRecommendation.recommendation) as any}>
+                          {aiRecommendation.recommendation}
+                        </Badge>
+                      </CardTitle>
+                      <CardDescription>
+                        Confidence: {aiRecommendation.confidence}% | Risk: {aiRecommendation.riskLevel}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-2">Analysis</p>
+                        <p className="text-sm leading-relaxed">{aiRecommendation.reasoning}</p>
+                      </div>
+                      {aiRecommendation.priceTarget && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">Price Target</p>
+                          <p className="text-xl font-bold">${aiRecommendation.priceTarget.toFixed(2)}</p>
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <Badge variant={getRiskColor(aiRecommendation.riskLevel) as any}>
+                          {aiRecommendation.riskLevel} Risk
+                        </Badge>
+                        <Badge variant="outline">
+                          {aiRecommendation.confidence}% Confidence
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
