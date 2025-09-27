@@ -33,37 +33,42 @@ export class PolygonService {
 
   async getStockData(ticker: string): Promise<PolygonStockData> {
     try {
-      // Get current quote
-      const quoteResponse = await fetch(
-        `${this.baseUrl}/v2/last/nbbo/${ticker}?apikey=${this.apiKey}`
-      );
-      
-      // Get previous close
-      const prevCloseResponse = await fetch(
-        `${this.baseUrl}/v2/aggs/ticker/${ticker}/prev?adjusted=true&apikey=${this.apiKey}`
+      const response = await fetch(
+        `${this.baseUrl}/v2/aggs/ticker/${ticker}/range/1/day/2025-09-22/2025-09-23?adjusted=true&sort=asc&limit=120&apikey=${this.apiKey}`
       );
 
-      if (!quoteResponse.ok || !prevCloseResponse.ok) {
+      if (!response.ok) {
         throw new Error(`Failed to fetch data for ${ticker}`);
       }
 
-      const quoteData = await quoteResponse.json();
-      const prevCloseData = await prevCloseResponse.json();
+      const data = await response.json();
+      const latest = data.results?.[data.results.length - 1]; // get last candle
 
-      const currentPrice = quoteData.results?.last?.price || 0;
-      const previousClose = prevCloseData.results?.[0]?.c || 0;
-      const change = currentPrice - previousClose;
+      if (!latest) {
+        throw new Error(`No results returned for ${ticker}`);
+      }
+
+      const price = latest.c;
+      const open = latest.o;
+      const high = latest.h;
+      const low = latest.l;
+      const volume = latest.v;
+      const previousClose =
+        data.results.length > 1
+          ? data.results[data.results.length - 2].c
+          : price;
+      const change = price - previousClose;
       const changePercent = previousClose ? (change / previousClose) * 100 : 0;
 
       return {
         ticker: ticker.toUpperCase(),
-        price: currentPrice,
+        price,
         change: parseFloat(change.toFixed(2)),
         changePercent: parseFloat(changePercent.toFixed(2)),
-        volume: prevCloseData.results?.[0]?.v || 0,
-        open: prevCloseData.results?.[0]?.o,
-        high: prevCloseData.results?.[0]?.h,
-        low: prevCloseData.results?.[0]?.l,
+        volume,
+        open,
+        high,
+        low,
         previousClose,
       };
     } catch (error) {
@@ -82,14 +87,18 @@ export class OpenAIService {
     this.apiKey = apiKey;
   }
 
-  async getStockRecommendation(stockData: PolygonStockData): Promise<OpenAIRecommendation> {
+  async getStockRecommendation(
+    stockData: PolygonStockData
+  ): Promise<OpenAIRecommendation> {
     try {
       const prompt = `
 Analyze the following stock data and provide a recommendation:
 
 Stock: ${stockData.ticker}
 Current Price: $${stockData.price}
-Change: ${stockData.change >= 0 ? "+" : ""}${stockData.change} (${stockData.changePercent >= 0 ? "+" : ""}${stockData.changePercent}%)
+Change: ${stockData.change >= 0 ? "+" : ""}${stockData.change} (${
+        stockData.changePercent >= 0 ? "+" : ""
+      }${stockData.changePercent}%)
 Volume: ${stockData.volume.toLocaleString()}
 ${stockData.open ? `Open: $${stockData.open}` : ""}
 ${stockData.high ? `High: $${stockData.high}` : ""}
@@ -117,14 +126,15 @@ Format your response as JSON with the following structure:
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${this.apiKey}`,
+          Authorization: `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
-          model: "gpt-3.5-turbo",
+          model: "gpt-5-nano",
           messages: [
             {
               role: "system",
-              content: "You are a professional stock analyst providing investment recommendations based on market data. Always respond with valid JSON format."
+              content:
+                "You are a professional stock analyst providing investment recommendations based on market data. Always respond with valid JSON format.",
             },
             {
               role: "user",
@@ -149,9 +159,13 @@ Format your response as JSON with the following structure:
 
       // Parse the JSON response
       const recommendation = JSON.parse(content);
-      
+
       // Validate the response structure
-      if (!recommendation.recommendation || !recommendation.confidence || !recommendation.reasoning) {
+      if (
+        !recommendation.recommendation ||
+        !recommendation.confidence ||
+        !recommendation.reasoning
+      ) {
         throw new Error("Invalid response format from OpenAI");
       }
 
@@ -173,7 +187,7 @@ Format your response as JSON with the following structure:
 export const createMockStockData = (ticker: string): PolygonStockData => {
   const basePrice = Math.random() * 500 + 50;
   const change = (Math.random() - 0.5) * 20;
-  
+
   return {
     ticker: ticker.toUpperCase(),
     price: parseFloat(basePrice.toFixed(2)),
@@ -188,15 +202,36 @@ export const createMockStockData = (ticker: string): PolygonStockData => {
   };
 };
 
-export const createMockRecommendation = (stockData: PolygonStockData): OpenAIRecommendation => {
-  const recommendations: OpenAIRecommendation["recommendation"][] = ["BUY", "SELL", "HOLD"];
-  const riskLevels: OpenAIRecommendation["riskLevel"][] = ["LOW", "MEDIUM", "HIGH"];
-  
+export const createMockRecommendation = (
+  stockData: PolygonStockData
+): OpenAIRecommendation => {
+  const recommendations: OpenAIRecommendation["recommendation"][] = [
+    "BUY",
+    "SELL",
+    "HOLD",
+  ];
+  const riskLevels: OpenAIRecommendation["riskLevel"][] = [
+    "LOW",
+    "MEDIUM",
+    "HIGH",
+  ];
+
   return {
-    recommendation: recommendations[Math.floor(Math.random() * recommendations.length)],
+    recommendation:
+      recommendations[Math.floor(Math.random() * recommendations.length)],
     confidence: Math.floor(Math.random() * 40 + 60), // 60-100%
-    reasoning: `Based on current market conditions and ${stockData.ticker}'s recent performance showing ${stockData.changePercent >= 0 ? "positive" : "negative"} momentum of ${stockData.changePercent.toFixed(2)}%, this recommendation considers technical indicators, trading volume of ${stockData.volume.toLocaleString()}, and fundamental analysis. The stock shows ${stockData.change >= 0 ? "upward" : "downward"} pressure with current volatility.`,
-    priceTarget: parseFloat((stockData.price * (1 + (Math.random() - 0.5) * 0.3)).toFixed(2)),
+    reasoning: `Based on current market conditions and ${
+      stockData.ticker
+    }'s recent performance showing ${
+      stockData.changePercent >= 0 ? "positive" : "negative"
+    } momentum of ${stockData.changePercent.toFixed(
+      2
+    )}%, this recommendation considers technical indicators, trading volume of ${stockData.volume.toLocaleString()}, and fundamental analysis. The stock shows ${
+      stockData.change >= 0 ? "upward" : "downward"
+    } pressure with current volatility.`,
+    priceTarget: parseFloat(
+      (stockData.price * (1 + (Math.random() - 0.5) * 0.3)).toFixed(2)
+    ),
     riskLevel: riskLevels[Math.floor(Math.random() * riskLevels.length)],
   };
 };

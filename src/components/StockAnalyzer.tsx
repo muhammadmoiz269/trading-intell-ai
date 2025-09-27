@@ -1,33 +1,51 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, BarChart3, Search, AlertTriangle, Settings, Plus, X } from "lucide-react";
+import {
+  TrendingUp,
+  TrendingDown,
+  BarChart3,
+  Search,
+  AlertTriangle,
+  Settings,
+  Plus,
+  X,
+} from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { 
-  PolygonService, 
-  OpenAIService, 
-  createMockStockData, 
+import {
+  PolygonService,
+  OpenAIService,
+  createMockStockData,
   createMockRecommendation,
   type PolygonStockData,
-  type OpenAIRecommendation 
+  type OpenAIRecommendation,
 } from "@/lib/api";
 
 export default function StockAnalyzer() {
   const [ticker, setTicker] = useState("");
   const [tickers, setTickers] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<Array<{
-    stockData: PolygonStockData;
-    aiRecommendation: OpenAIRecommendation;
-  }>>([]);
+  const [results, setResults] = useState<
+    Array<{
+      stockData: PolygonStockData;
+      aiRecommendation: OpenAIRecommendation;
+    }>
+  >([]);
   const [error, setError] = useState<string | null>(null);
 
   // For demo purposes, we'll use mock data
   // In production, you would get these from environment variables or user input
-  const POLYGON_API_KEY = ""; // Add your Polygon API key here
-  const OPENAI_API_KEY = ""; // Add your OpenAI API key here
+  const POLYGON_API_KEY = "fobPqp1CCkkv_4XQJZUO2jNVuQXTjpnv"; // Add your Polygon API key here
+  const OPENAI_API_KEY =
+    "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"; // Add your OpenAI API key here
 
   const addTicker = () => {
     if (!ticker.trim()) {
@@ -58,7 +76,7 @@ export default function StockAnalyzer() {
   };
 
   const removeTicker = (tickerToRemove: string) => {
-    setTickers(tickers.filter(t => t !== tickerToRemove));
+    setTickers(tickers.filter((t) => t !== tickerToRemove));
   };
 
   const handleAnalyze = async () => {
@@ -88,18 +106,21 @@ export default function StockAnalyzer() {
           const openAIService = new OpenAIService(OPENAI_API_KEY);
 
           stockDataResult = await polygonService.getStockData(tickerSymbol);
-          aiRecommendationResult = await openAIService.getStockRecommendation(stockDataResult);
+          aiRecommendationResult = createMockRecommendation(stockDataResult);
+          // aiRecommendationResult = await openAIService.createMockRecommendation(
+          //   stockDataResult
+          // );
         } else {
           // Use mock data for demonstration
           stockDataResult = createMockStockData(tickerSymbol);
           // Simulate API delay
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
           aiRecommendationResult = createMockRecommendation(stockDataResult);
         }
 
         analysisResults.push({
           stockData: stockDataResult,
-          aiRecommendation: aiRecommendationResult
+          aiRecommendation: aiRecommendationResult,
         });
       }
 
@@ -107,11 +128,17 @@ export default function StockAnalyzer() {
 
       toast({
         title: "Analysis Complete",
-        description: `Generated recommendations for ${tickers.length} stock${tickers.length > 1 ? 's' : ''}`,
+        description: `Generated recommendations for ${tickers.length} stock${
+          tickers.length > 1 ? "s" : ""
+        }`,
       });
     } catch (error) {
       console.error("Analysis error:", error);
-      setError(error instanceof Error ? error.message : "Failed to analyze stocks. Please try again.");
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to analyze stocks. Please try again."
+      );
       toast({
         title: "Analysis Failed",
         description: "Unable to fetch stock data or generate recommendations",
@@ -122,19 +149,27 @@ export default function StockAnalyzer() {
     }
   };
 
-  const getRecommendationColor = (rec: OpenAIRecommendation["recommendation"]) => {
+  const getRecommendationColor = (
+    rec: OpenAIRecommendation["recommendation"]
+  ) => {
     switch (rec) {
-      case "BUY": return "success";
-      case "SELL": return "danger";
-      case "HOLD": return "warning";
+      case "BUY":
+        return "success";
+      case "SELL":
+        return "danger";
+      case "HOLD":
+        return "warning";
     }
   };
 
   const getRiskColor = (risk: OpenAIRecommendation["riskLevel"]) => {
     switch (risk) {
-      case "LOW": return "success";
-      case "MEDIUM": return "warning";
-      case "HIGH": return "danger";
+      case "LOW":
+        return "success";
+      case "MEDIUM":
+        return "warning";
+      case "HIGH":
+        return "danger";
     }
   };
 
@@ -150,7 +185,8 @@ export default function StockAnalyzer() {
             </h1>
           </div>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Get AI-powered buy, sell, or hold recommendations based on real-time market data and advanced analysis.
+            Get AI-powered buy, sell, or hold recommendations based on real-time
+            market data and advanced analysis.
           </p>
         </div>
 
@@ -162,7 +198,8 @@ export default function StockAnalyzer() {
               Stock Analysis
             </CardTitle>
             <CardDescription>
-              Enter stock ticker symbols (e.g., MSFT, TSLA, AAPL) to add them to your analysis list
+              Enter stock ticker symbols (e.g., MSFT, TSLA, AAPL) to add them to
+              your analysis list
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -174,8 +211,8 @@ export default function StockAnalyzer() {
                 className="flex-1"
                 onKeyPress={(e) => e.key === "Enter" && addTicker()}
               />
-              <Button 
-                onClick={addTicker} 
+              <Button
+                onClick={addTicker}
                 variant="outline"
                 size="default"
                 className="px-4"
@@ -191,7 +228,11 @@ export default function StockAnalyzer() {
                 <p className="text-sm text-muted-foreground">Added tickers:</p>
                 <div className="flex flex-wrap gap-2">
                   {tickers.map((tickerSymbol) => (
-                    <Badge key={tickerSymbol} variant="outline" className="flex items-center gap-1">
+                    <Badge
+                      key={tickerSymbol}
+                      variant="outline"
+                      className="flex items-center gap-1"
+                    >
                       {tickerSymbol}
                       <Button
                         variant="ghost"
@@ -207,14 +248,18 @@ export default function StockAnalyzer() {
               </div>
             )}
 
-            <Button 
-              onClick={handleAnalyze} 
+            <Button
+              onClick={handleAnalyze}
               disabled={loading || tickers.length === 0}
               variant="default"
               size="lg"
               className="w-full"
             >
-              {loading ? "Analyzing..." : `Generate Report${tickers.length > 1 ? 's' : ''} (${tickers.length})`}
+              {loading
+                ? "Analyzing..."
+                : `Generate Report${tickers.length > 1 ? "s" : ""} (${
+                    tickers.length
+                  })`}
             </Button>
           </CardContent>
         </Card>
@@ -237,14 +282,22 @@ export default function StockAnalyzer() {
             <h2 className="text-2xl font-bold text-center">Analysis Results</h2>
             <div className="grid grid-cols-1 gap-8">
               {results.map(({ stockData, aiRecommendation }, index) => (
-                <div key={stockData.ticker} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div
+                  key={stockData.ticker}
+                  className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+                >
                   {/* Stock Data */}
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
                         <span>{stockData.ticker}</span>
-                        <Badge variant={stockData.change >= 0 ? "default" : "destructive"}>
-                          {stockData.change >= 0 ? "+" : ""}{stockData.changePercent.toFixed(2)}%
+                        <Badge
+                          variant={
+                            stockData.change >= 0 ? "default" : "destructive"
+                          }
+                        >
+                          {stockData.change >= 0 ? "+" : ""}
+                          {stockData.changePercent.toFixed(2)}%
                         </Badge>
                       </CardTitle>
                       <CardDescription>Current Market Data</CardDescription>
@@ -252,25 +305,46 @@ export default function StockAnalyzer() {
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <p className="text-sm text-muted-foreground">Current Price</p>
-                          <p className="text-2xl font-bold">${stockData.price.toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Change</p>
-                          <p className={`text-2xl font-bold flex items-center gap-1 ${
-                            stockData.change >= 0 ? "text-success" : "text-danger"
-                          }`}>
-                            {stockData.change >= 0 ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
-                            {stockData.change >= 0 ? "+" : ""}{stockData.change}
+                          <p className="text-sm text-muted-foreground">
+                            Current Price
+                          </p>
+                          <p className="text-2xl font-bold">
+                            ${stockData.price.toFixed(2)}
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Volume</p>
-                          <p className="text-lg font-semibold">{stockData.volume.toLocaleString()}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Change
+                          </p>
+                          <p
+                            className={`text-2xl font-bold flex items-center gap-1 ${
+                              stockData.change >= 0
+                                ? "text-success"
+                                : "text-danger"
+                            }`}
+                          >
+                            {stockData.change >= 0 ? (
+                              <TrendingUp className="h-5 w-5" />
+                            ) : (
+                              <TrendingDown className="h-5 w-5" />
+                            )}
+                            {stockData.change >= 0 ? "+" : ""}
+                            {stockData.change}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Volume
+                          </p>
+                          <p className="text-lg font-semibold">
+                            {stockData.volume.toLocaleString()}
+                          </p>
                         </div>
                         {stockData.marketCap && (
                           <div>
-                            <p className="text-sm text-muted-foreground">Market Cap</p>
+                            <p className="text-sm text-muted-foreground">
+                              Market Cap
+                            </p>
                             <p className="text-lg font-semibold">
                               ${(stockData.marketCap / 1000000000).toFixed(1)}B
                             </p>
@@ -278,14 +352,23 @@ export default function StockAnalyzer() {
                         )}
                         {stockData.open && (
                           <div>
-                            <p className="text-sm text-muted-foreground">Open</p>
-                            <p className="text-lg font-semibold">${stockData.open.toFixed(2)}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Open
+                            </p>
+                            <p className="text-lg font-semibold">
+                              ${stockData.open.toFixed(2)}
+                            </p>
                           </div>
                         )}
                         {stockData.high && stockData.low && (
                           <div>
-                            <p className="text-sm text-muted-foreground">Day Range</p>
-                            <p className="text-lg font-semibold">${stockData.low.toFixed(2)} - ${stockData.high.toFixed(2)}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Day Range
+                            </p>
+                            <p className="text-lg font-semibold">
+                              ${stockData.low.toFixed(2)} - $
+                              {stockData.high.toFixed(2)}
+                            </p>
                           </div>
                         )}
                       </div>
@@ -293,31 +376,56 @@ export default function StockAnalyzer() {
                   </Card>
 
                   {/* AI Recommendation */}
-                  <Card className={`border-${getRecommendationColor(aiRecommendation.recommendation)} glow-${getRecommendationColor(aiRecommendation.recommendation)}`}>
+                  <Card
+                    className={`border-${getRecommendationColor(
+                      aiRecommendation.recommendation
+                    )} glow-${getRecommendationColor(
+                      aiRecommendation.recommendation
+                    )}`}
+                  >
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
                         <span>AI Recommendation</span>
-                        <Badge variant={getRecommendationColor(aiRecommendation.recommendation) as any}>
+                        <Badge
+                          variant={
+                            getRecommendationColor(
+                              aiRecommendation.recommendation
+                            ) as any
+                          }
+                        >
                           {aiRecommendation.recommendation}
                         </Badge>
                       </CardTitle>
                       <CardDescription>
-                        Confidence: {aiRecommendation.confidence}% | Risk: {aiRecommendation.riskLevel}
+                        Confidence: {aiRecommendation.confidence}% | Risk:{" "}
+                        {aiRecommendation.riskLevel}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
-                        <p className="text-sm text-muted-foreground mb-2">Analysis</p>
-                        <p className="text-sm leading-relaxed">{aiRecommendation.reasoning}</p>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Analysis
+                        </p>
+                        <p className="text-sm leading-relaxed">
+                          {aiRecommendation.reasoning}
+                        </p>
                       </div>
                       {aiRecommendation.priceTarget && (
                         <div>
-                          <p className="text-sm text-muted-foreground">Price Target</p>
-                          <p className="text-xl font-bold">${aiRecommendation.priceTarget.toFixed(2)}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Price Target
+                          </p>
+                          <p className="text-xl font-bold">
+                            ${aiRecommendation.priceTarget.toFixed(2)}
+                          </p>
                         </div>
                       )}
                       <div className="flex gap-2">
-                        <Badge variant={getRiskColor(aiRecommendation.riskLevel) as any}>
+                        <Badge
+                          variant={
+                            getRiskColor(aiRecommendation.riskLevel) as any
+                          }
+                        >
                           {aiRecommendation.riskLevel} Risk
                         </Badge>
                         <Badge variant="outline">
@@ -338,18 +446,27 @@ export default function StockAnalyzer() {
             <div className="flex items-start gap-3">
               <Settings className="h-5 w-5 text-warning mt-0.5" />
               <div>
-                <h3 className="font-semibold text-warning mb-2">API Configuration</h3>
+                <h3 className="font-semibold text-warning mb-2">
+                  API Configuration
+                </h3>
                 <p className="text-sm text-muted-foreground mb-3">
-                  To use real market data and AI analysis, configure your API keys:
+                  To use real market data and AI analysis, configure your API
+                  keys:
                 </p>
                 <div className="space-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-primary"></div>
-                    <span><strong>Polygon.io API Key:</strong> Real-time stock market data</span>
+                    <span>
+                      <strong>Polygon.io API Key:</strong> Real-time stock
+                      market data
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-primary"></div>
-                    <span><strong>OpenAI API Key:</strong> AI-powered investment recommendations</span>
+                    <span>
+                      <strong>OpenAI API Key:</strong> AI-powered investment
+                      recommendations
+                    </span>
                   </div>
                 </div>
                 <div className="mt-4 p-3 bg-muted rounded-lg">
