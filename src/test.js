@@ -20,7 +20,7 @@ async function listModels() {
     "https://generativelanguage.googleapis.com/v1beta/models",
     {
       headers: {
-        "x-goog-api-key": "AIzaSyDEUE8_DTO512V1d9VF_1N7bjs12kaGc9A",
+        "x-goog-api-key": "GEM_KEY",
       },
     }
   );
