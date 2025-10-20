@@ -43,9 +43,6 @@ export default function StockAnalyzer() {
 
   // For demo purposes, we'll use mock data
   // In production, you would get these from environment variables or user input
-  const POLYGON_API_KEY = "fobPqp1CCkkv_4XQJZUO2jNVuQXTjpnv"; // Add your Polygon API key here
-  const OPENAI_API_KEY =
-    "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"; // Add your OpenAI API key here
 
   const addTicker = () => {
     if (!ticker.trim()) {
@@ -100,10 +97,17 @@ export default function StockAnalyzer() {
         let stockDataResult: PolygonStockData;
         let aiRecommendationResult: OpenAIRecommendation;
 
-        if (POLYGON_API_KEY && OPENAI_API_KEY) {
+        if (
+          process.env.VITE_POLYGON_API_KEY &&
+          process.env.VITE_OPENAI_API_KEY
+        ) {
           // Use real APIs when keys are available
-          const polygonService = new PolygonService(POLYGON_API_KEY);
-          const openAIService = new OpenAIService(OPENAI_API_KEY);
+          const polygonService = new PolygonService(
+            process.env.VITE_POLYGON_API_KEY
+          );
+          const openAIService = new OpenAIService(
+            process.env.VITE_OPENAI_API_KEY
+          );
 
           stockDataResult = await polygonService.getStockData(tickerSymbol);
           aiRecommendationResult = createMockRecommendation(stockDataResult);
