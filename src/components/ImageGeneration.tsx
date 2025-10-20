@@ -3,15 +3,6 @@ import React, { useState } from "react";
 import { OpenAI } from "openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// AIzaSyDEUE8_DTO512V1d9VF_1N7bjs12kaGc9A
-// const openai = new OpenAI({
-//   dangerouslyAllowBrowser: true,
-//   apiKey:
-//     "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",
-// });
-
-const genAI = new GoogleGenerativeAI("AIzaSyDEUE8_DTO512V1d9VF_1N7bjs12kaGc9A");
-
 const ImageGeneration: React.FC = () => {
   const [prompt, setPrompt] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -22,7 +13,7 @@ const ImageGeneration: React.FC = () => {
 
     const response = await fetch(
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=" +
-        "AIzaSyDEUE8_DTO512V1d9VF_1N7bjs12kaGc9A",
+        process.env.VITE_GEMINI_KEY,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
