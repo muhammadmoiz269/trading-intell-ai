@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI("AIzaSyDEUE8_DTO512V1d9VF_1N7bjs12kaGc9A");
+const genAI = new GoogleGenerativeAI("GEM_KEY");
 
 async function test() {
   try {
