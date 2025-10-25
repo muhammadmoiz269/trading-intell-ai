@@ -4,7 +4,6 @@ import StockAnalyzer from "@/components/StockAnalyzer";
 
 const Index = () => {
   // return <StockAnalyzer />;
-  // return <ImageGeneration />;
   return <LanguageTranslator />;
 };
 
