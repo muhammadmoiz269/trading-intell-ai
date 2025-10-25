@@ -29,6 +29,9 @@ import {
   type OpenAIRecommendation,
 } from "@/lib/api";
 
+const polygonKey = import.meta.env.VITE_POLYGON_API_KEY;
+const openAiKey = import.meta.env.VITE_OPENAI_API_KEY;
+
 export default function StockAnalyzer() {
   const [ticker, setTicker] = useState("");
   const [tickers, setTickers] = useState<string[]>([]);
@@ -97,17 +100,10 @@ export default function StockAnalyzer() {
         let stockDataResult: PolygonStockData;
         let aiRecommendationResult: OpenAIRecommendation;
 
-        if (
-          process.env.VITE_POLYGON_API_KEY &&
-          process.env.VITE_OPENAI_API_KEY
-        ) {
+        if (polygonKey && openAiKey) {
           // Use real APIs when keys are available
-          const polygonService = new PolygonService(
-            process.env.VITE_POLYGON_API_KEY
-          );
-          const openAIService = new OpenAIService(
-            process.env.VITE_OPENAI_API_KEY
-          );
+          const polygonService = new PolygonService(polygonKey);
+          const openAIService = new OpenAIService(openAiKey);
 
           stockDataResult = await polygonService.getStockData(tickerSymbol);
           aiRecommendationResult = createMockRecommendation(stockDataResult);

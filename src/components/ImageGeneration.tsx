@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { OpenAI } from "openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+const apiKey = import.meta.env.VITE_GEMINI_KEY;
 
 const ImageGeneration: React.FC = () => {
   const [prompt, setPrompt] = useState("");
@@ -13,7 +14,7 @@ const ImageGeneration: React.FC = () => {
 
     const response = await fetch(
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=" +
-        process.env.VITE_GEMINI_KEY,
+        apiKey,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -31,7 +32,7 @@ const ImageGeneration: React.FC = () => {
     const result = await response.json();
     console.log(result);
 
-    const b64 = result?.candidates?.[0]?.content?.parts?.[1]?.inlineData?.data;
+    const b64 = result?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
     console.log("b64", b64);
 
     if (b64) {
