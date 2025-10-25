@@ -1,7 +1,5 @@
 "use client";
 import React, { useState } from "react";
-import { OpenAI } from "openai";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 const apiKey = import.meta.env.VITE_GEMINI_KEY;
 
 const ImageGeneration: React.FC = () => {
