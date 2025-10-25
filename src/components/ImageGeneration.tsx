@@ -31,7 +31,6 @@ const ImageGeneration: React.FC = () => {
     console.log(result);
 
     const b64 = result?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    console.log("b64", b64);
 
     if (b64) {
       const url = `data:image/png;base64,${b64}`;
